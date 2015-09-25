@@ -15,3 +15,24 @@ import requests
 
 app = Flask(__name__)
 
+engine = create_engine('sqlite:///catalog.db')
+Base.metadata.bind = engine
+
+DBSession = sessionmaker(bind=engine)
+session = DBSession()
+
+
+@app.route('/')
+@app.route('/catalog')
+def showCategory():
+    category = session.query(Category).all()
+    items = session.query(Item).all()
+    return render_template('catalog.html', category = category, items = items)
+    
+
+
+
+
+if __name__ == '__main__':
+    app.debug = True
+    app.run(host='0.0.0.0', port=8000)

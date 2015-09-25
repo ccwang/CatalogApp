@@ -3,7 +3,7 @@ from sqlalchemy.orm import sessionmaker
 
 from database_setup import Category, Base, Item
 
-engine = create_engine('sqlite:///catelog.db')
+engine = create_engine('sqlite:///catalog.db')
 # Bind the engine to the metadata of the Base class so that the
 # declaratives can be accessed through a DBSession instance
 Base.metadata.bind = engine
@@ -87,5 +87,6 @@ item2 = Item(name = "Burton Clash Snowboard",
 session.add(item2)
 session.commit()
 
+print session.query(Category).all()
 
 print "added menu items!"
