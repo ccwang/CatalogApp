@@ -87,6 +87,6 @@ item2 = Item(name = "Burton Clash Snowboard",
 session.add(item2)
 session.commit()
 
-print session.query(Category).all()
+#print session.query(Category).all()
 
 print "added menu items!"
