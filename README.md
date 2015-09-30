@@ -32,37 +32,25 @@ project3_catalog
 
 ## How to use
 
-**Create the `tournament` database**
+**Create the `catalog` database**
 
 ```
-vagrant@vagrant-ubuntu-trusty-32:/vagrant/tournament$ psql
-psql (9.3.9)
-Type "help" for help.
-
-vagrant=> \i tournament.sql
-DROP DATABASE
-CREATE DATABASE
-You are now connected to database "tournament" as user "vagrant".
-CREATE TABLE
-CREATE TABLE
-CREATE VIEW
-CREATE VIEW
-CREATE VIEW
-tournament=> \q
+rm catalog.db
+python database_init.py
 ```
 
-**Run Test**
+**Run Server**
 
 ```
-vagrant@vagrant-ubuntu-trusty-32:/vagrant/tournament$ python tournament_test.py
-1. Old matches can be deleted.
-2. Player records can be deleted.
-3. After deleting, countPlayers() returns zero.
-4. After registering a player, countPlayers() returns 1.
-5. Players can be registered and deleted.
-6. Newly registered players appear in the standings with no matches.
-7. After a match, players have updated standings.
-8. After one match, players with one win are paired.
-Success!  All tests pass!
-
+python application.py
 ```
+
+**Open the website**
+
+http://localhost:8000/
+
+You can explore the website by logging in with google account.
+
+**The JSON can be accessed from **
+
+http://localhost:8000/catalog.json
