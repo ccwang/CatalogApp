@@ -1,0 +1,15 @@
+{% extends "main.html" %} 
+{% block content %}
+
+<div class="row">
+    <h1>{{item.name}}</h1>
+    <p>{{item.description}}</p>
+</div>
+
+{% if logged_in %}
+</br>
+<a href="{{url_for('editItem', itemname=item.name)}}">Edit</a> |
+<a href="{{url_for('deleteItem', itemname=item.name)}}">Delete</a> 
+{% endif %} 
+
+{% endblock %}

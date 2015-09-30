@@ -1,21 +1,26 @@
-from flask import Flask, render_template, request, redirect, jsonify, url_for, flash
+from flask import (Flask, render_template, request, redirect,
+                   jsonify, url_for, flash, make_response)
+from flask import session as login_session
+
 from sqlalchemy import create_engine, asc
 from sqlalchemy.orm import sessionmaker
 from database_setup import Base, Category, Item, User
-from flask import session as login_session
-import random,string
+
 from oauth2client.client import flow_from_clientsecrets
 from oauth2client.client import FlowExchangeError
+
+import random
+import string
 import httplib2
-import json
-from flask import make_response
 import requests
+import json
+
 
 app = Flask(__name__)
 
+# Database
 engine = create_engine('sqlite:///catalog.db')
 Base.metadata.bind = engine
-
 DBSession = sessionmaker(bind=engine)
 session = DBSession()
 
@@ -24,18 +29,18 @@ CLIENT_ID = json.loads(
     open('client_secrets.json', 'r').read())['web']['client_id']
 
 
-# Create anti-forgery state token
 @app.route('/login')
 def showLogin():
+    """Create anti-gorgery state token and show login page"""
     state = ''.join(random.choice(string.ascii_uppercase + string.digits)
                     for x in xrange(32))
     login_session['state'] = state
-    #return "The current session state is %s" % login_session['state']
     return render_template('login.html', STATE=state)
 
 
 @app.route('/gconnect', methods=['POST'])
 def gconnect():
+    """Connect google"""
     # Validate state token
     if request.args.get('state') != login_session['state']:
         response = make_response(json.dumps('Invalid state parameter.'), 401)
@@ -85,7 +90,7 @@ def gconnect():
     stored_credentials = login_session.get('credentials')
     stored_gplus_id = login_session.get('gplus_id')
     if stored_credentials is not None and gplus_id == stored_gplus_id:
-        response = make_response(json.dumps('Current user is already connected.'),
+        response = make_response(json.dumps('User is already connected.'),
                                  200)
         response.headers['Content-Type'] = 'application/json'
         return response
@@ -106,12 +111,14 @@ def gconnect():
     login_session['email'] = data['email']
     # ADD PROVIDER TO LOGIN SESSION
     login_session['provider'] = 'google'
-    print login_session
+    
     # see if user exists, if it doesn't make a new one
-    user_id = getUserID(data["email"])
-    if not user_id:
-        print user_id
+    try:
+        user = session.query(User).filter_by(email=data['email']).one()
+        user_id = user.id
+    except:
         user_id = createUser(login_session)
+
     login_session['user_id'] = user_id
 
     output = ''
@@ -125,40 +132,10 @@ def gconnect():
     print "done!"
     return output
 
-# User Helper Functions
-def createUser(login_session):
-    newUser = User(name=login_session['username'], email=login_session[
-                   'email'], picture=login_session['picture'])
-    session.add(newUser)
-    session.commit()
-    user = session.query(User).filter_by(email=login_session['email']).one()
-    return user.id
-
-
-def getUserInfo(user_id):
-    user = session.query(User).filter_by(id=user_id).one()
-    return user
-
-
-def getUserID(email):
-    try:
-        user = session.query(User).filter_by(email=email).one()
-        return user.id
-    except:
-        return None
-
-
-def isLoggedin():
-    if 'username' in login_session:
-        logged_in = True
-    else:
-        logged_in = False
-    return logged_in
-
 
 @app.route('/gdisconnect')
 def gdisconnect():
-    # Only disconnect a connected user.
+    """Disconnect a connected user."""
     credentials = login_session.get('credentials')
     if credentials is None:
         response = make_response(
@@ -177,69 +154,9 @@ def gdisconnect():
         return response
 
 
-@app.route('/')
-@app.route('/catalog')
-def showLatest():
-    category = session.query(Category).all()
-    items = session.query(Item).order_by(Item.create_date.desc())
-
-    return render_template('catalog.html', category = category, 
-                           items = items, logged_in = isLoggedin())
-    
-    
-@app.route('/catalog/<name>')
-@app.route('/catalog/<name>/items')
-def showCategory(name):
-    category = session.query(Category).all()
-    category_id = session.query(Category).filter_by(name=name).first().id
-    items = session.query(Item).filter_by(category_id = category_id).all()
-    return render_template('show_category.html', category = category, 
-                           name = name, items = items, nitem = len(items),
-                           logged_in = isLoggedin())
-
-
-@app.route('/catalog/<name>/items/<itemname>')
-def showDescription(name, itemname):
-    item = session.query(Item).filter_by(name = itemname).first()
-    user = session.query(User).filter_by(id=item.user_id).one()
-    if 'username' in login_session and login_session['email'] == user.email:
-        canEdit = True
-    else:
-        canEdit = False
-    
-    return render_template('show_description.html', name=name, item=item, 
-                           logged_in = isLoggedin(),canEdit=canEdit)
-
-
-@app.route('/catalog/<name>/<itemname>/edit', methods=['GET', 'POST'])
-def editItem(name, itemname):
-    item = session.query(Item).filter_by(name = itemname).first()
-    user = session.query(User).filter_by(id=item.user_id).one()
-    category = session.query(Category).all()
-    if 'username' in login_session and login_session['email'] == user.email:
-        canEdit = True
-    else:
-        canEdit = False
-        flash('You don\'t create this!', 'warning')
-        return redirect(url_for('showLatest'))
-    if request.method == 'POST':
-        newcategory = request.form['item-category']
-        item.categroy_id = session.query(Category).filter_by(name = newcategory).first().id
-        item.name = request.form['item-name']
-        item.description = request.form['item-description']
-        session.add(item)
-        session.commit()
-        flash('New %s Item Successfully added' % (item.name))
-        return redirect(url_for('showDescription', name = newcategory, itemname=item.name))
-    else:
-        return render_template('edit.html', category=category, item=item, name=name)  
-
-
-
-
-# Disconnect based on provider
 @app.route('/disconnect')
 def disconnect():
+    """Disconnect google"""
     if 'provider' in login_session:
         if login_session['provider'] == 'google':
             gdisconnect()
@@ -255,6 +172,150 @@ def disconnect():
     else:
         flash("You were not logged in")
         return redirect(url_for('showLatest'))
+
+
+def createUser(login_session):
+    """Create user and add to dababase"""
+    newUser = User(name=login_session['username'], email=login_session[
+                   'email'], picture=login_session['picture'])
+    session.add(newUser)
+    session.commit()
+    user = session.query(User).filter_by(email=login_session['email']).one()
+    return user.id
+
+
+def isLoggedin():
+    """Check is logged in or not"""
+    if 'username' in login_session:
+        logged_in = True
+    else:
+        logged_in = False
+    return logged_in
+
+
+@app.route('/')
+@app.route('/catalog')
+def showLatest():
+    """Show the latest items"""
+    category = session.query(Category).all()
+    items = session.query(Item).order_by(Item.create_date.desc())
+    return render_template('catalog_latest.html', category = category, 
+                           items = items, logged_in = isLoggedin())
+    
+    
+@app.route('/catalog/<name>')
+@app.route('/catalog/<name>/items')
+def showCategory(name):
+    """Show items in each category"""
+    category = session.query(Category).all()
+    category_id = session.query(Category).filter_by(name=name).first().id
+    items = session.query(Item).filter_by(category_id = category_id).all()
+    return render_template('catalog_category.html', category = category, 
+                           name = name, items = items, nitem = len(items),
+                           logged_in = isLoggedin())
+
+
+@app.route('/catalog/<name>/items/<itemname>')
+def showDescription(name, itemname):
+    """Show the description of an item"""
+    item = session.query(Item).filter_by(name = itemname).first()
+    user = session.query(User).filter_by(id=item.user_id).one()    
+    return render_template('catalog_description.html', item=item, 
+                           logged_in = isLoggedin())
+
+
+@app.route('/catalog/<itemname>/edit', methods=['GET', 'POST'])
+def editItem(itemname): 
+    """Page to edit item if the item is created by the user."""
+    item = session.query(Item).filter_by(name = itemname).first()
+    user = session.query(User).filter_by(id=item.user_id).one()
+    category = session.query(Category).all()
+    cat = session.query(Category).filter_by(id=item.category_id).first()
+    
+    if not isLoggedin():
+        return redirect('/login')
+    if login_session['email'] != user.email:
+        flash("You cannot edit this item")
+        return "<script>function myFunction() {alert('You are not authorized to edit this item.');}</script><body onload='myFunction()''>"
+    
+    if request.method == 'POST':
+        item.name = request.form['item-name']
+        item.description = request.form['item-description']        
+        newcategory = request.form['item-category']
+        item.categroy_id = session.query(Category).filter_by(name = newcategory).first().id
+        session.commit()
+        
+        flash('Item %s is Successfully updated' % (item.name))
+        return redirect(url_for('showDescription', name = newcategory, 
+                                itemname=item.name))
+    else:
+        return render_template('edit.html', category=category, 
+                               name=cat.name, item=item, 
+                               logged_in = isLoggedin())  
+
+
+@app.route('/catalog/add', methods=['GET', 'POST'])
+def addItem():
+    """Add new items to the database if user is logged in."""
+    category = session.query(Category).all()
+    user = session.query(User).filter_by(email=login_session['email']).one()
+    
+    if not isLoggedin():
+        return redirect('/login')    
+        
+    if request.method == 'POST':
+        newcategory = request.form['item-category']
+        newitemname = request.form['item-name']
+        newdescription = request.form['item-description']
+        
+        if newcategory != '' and newitemname != '':
+            cat = session.query(Category).filter_by(name = newcategory).first()
+            if cat is None:
+                cat = Category(user_id = user.id, name = newcategory)
+                session.add(cat)
+                session.commit()
+            newitem = Item(user_id=user.id, name = newitemname, 
+                description = newdescription,
+                category = cat)
+            session.add(newitem)
+            session.commit()
+            flash('New %s Item Successfully added' % (newitemname))
+            return redirect(url_for('showDescription', name=newcategory, 
+                                    itemname=newitem.name))
+        else:
+            return "<script>function myFunction() {alert('Category or item name is missing!');}</script><body onload='myFunction()''>"
+    else:
+        return render_template('add.html', logged_in = isLoggedin()) 
+
+
+@app.route('/catalog/<itemname>/delete', methods=['GET', 'POST'])
+def deleteItem(itemname):
+    """Delete item if the item is created by the user."""
+    item = session.query(Item).filter_by(name=itemname).first()
+    user = session.query(User).filter_by(id=item.user_id).one()
+    
+    if not isLoggedin():
+        return redirect('/login')
+    if login_session['email'] != user.email:
+        return "<script>function myFunction() {alert('You are not authorized to delete this item.');}</script><body onload='myFunction()''>"
+    
+    if request.method == 'POST':
+        session.delete(item)
+        flash('%s Successfully Deleted' % item.name)
+        session.commit()
+        return redirect(url_for('showLatest'))
+    else:
+        return render_template('delete.html', item=item, 
+                               logged_in = isLoggedin())
+
+
+@app.route('/catalog.json')
+def catalogJSON():
+    """Show json of category and items"""
+    catalog = session.query(Category).all()
+    items = session.query(Item).all()
+    return jsonify(Category=[cat.serialize for cat in catalog],
+                   Item = [item.serialize for item in items])
 
 
 if __name__ == '__main__':

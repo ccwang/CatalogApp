@@ -1,21 +1,26 @@
 {% extends "main.html" %} 
-
 {% block content %}
 
 <div class="col-xs-12 col-sm-4 col-md-4">
     <h2>Categories</h2>
     <ul class="list-unstyled">
         {% for cat in category %}
-        <li><a href="{{url_for('showCategory', name=cat.name)}}">{{cat.name}}</a></li>
+        <li><a href="{{url_for('showCategory', name=cat.name )}}">{{cat.name}}</a></li>
         {% endfor %}
     </ul>
 </div>
 
 <div class="col-xs-12 col-sm-8 col-md-8">
-    <h2>{{name}} Items ( {{nitem}} items)</h2>
+    {% if logged_in %}
+    </br>
+    </br>
+    <h4><a href="{{url_for('addItem')}}">Add Items</a></h4> 
+    {% endif %}
+
+    <h2>Latest Items</h2>
     <ul class="list-unstyled">
         {% for item in items %}
-        <li><a href="{{url_for('showDescription', name=name,itemname=item.name)}}">{{item.name}}</a></li>
+        <li><a href="{{url_for('showDescription', name='Latest',itemname=item.name)}}">{{item.name}}</a></li>
         {% endfor %}
     </ul>
 </div>

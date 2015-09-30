@@ -5,6 +5,7 @@ from sqlalchemy import create_engine
 
 import datetime
 
+
 Base = declarative_base()
 
 
@@ -24,6 +25,15 @@ class Category(Base):
     name = Column(String(200), nullable=False)
     user_id = Column(Integer, ForeignKey('user.id'))
     user = relationship(User)
+    
+    @property
+    def serialize(self):
+        return {
+            'name': self.name,
+            'id': self.id,
+        }
+    
+    
 
 class Item(Base):
     __tablename__ = 'items'
@@ -37,9 +47,16 @@ class Item(Base):
     user_id = Column(Integer, ForeignKey('user.id'))
     user = relationship(User)
 
+    @property
+    def serialize(self):
+        return {
+            'name': self.name,
+            'description': self.description,
+            'id': self.id,
+            'create_date': self.create_date,
+            'category_id': self.category_id,
+        }
 
 
 engine = create_engine('sqlite:///catalog.db')
-
-
 Base.metadata.create_all(engine)

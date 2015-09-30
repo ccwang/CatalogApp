@@ -1,0 +1,47 @@
+{% extends "main.html" %} 
+{% block content %}
+
+<h2>Add Item</h2>
+
+<form class="form well" id="add-form" name="add-form" role="form" method="POST" action="{{form_action}}">
+    </br>
+    <div class="form-group">
+        <label for="item-name" class="col-sm-2">Title</label>
+        <div class="col-sm-10">
+            <input class="form-control" name="item-name" type="text" value="" autofocus required>
+        </div>
+    </div>
+    </br>
+    </br>
+    
+    <div class="form-group">
+        <label for="item-description" class="col-sm-2">Description</label>
+        <div class="col-sm-10">
+            <textarea class="form-control" rows="5" name="item-description" type="text" value="" autofocus required></textarea>
+        </div>
+    </div>
+    
+    </br>
+    </br>
+    </br>
+    </br>
+    </br>
+    </br>
+    
+    <div class="form-group">
+        <label for="item-name" class="col-sm-2">Category</label>
+        <div class="col-sm-10">
+            <input class="form-control" name="item-category" type="text" value="" autofocus required>
+        </div>
+    </div>
+    </br>
+    </br>
+    
+    <div class="col-sm-offset-2 col-sm-10">
+        <input type="submit" class="btn btn-success pull-right"></input>
+    </div>
+    
+    <div class="clearfix"></div>
+</form>
+
+{% endblock %}

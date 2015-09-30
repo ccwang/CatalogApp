@@ -1,36 +1,24 @@
 <div class="row top-menu row-sm-flex-center">
+    
     <div class="col-sm-6 col-md-6 text-left">
         <a href="{{url_for('showLatest')}}">
             <h1 style="font-weight:400; color:white">Catalog App</h1>
         </a>
     </div>
+    
     <div class="col-sm-6 col-md-6 text-right">
-    
-    {% if logged_in %}
-
-        <a class="btn btn-lg btn-success" href="{{url_for('disconnect')}}" 
-        role="button" style="font-weight:300; color:white; font-size:20px">Logout</a>
-    
-    {% else %}
-    
-        <a class="btn btn-lg btn-success" href="{{url_for('showLogin')}}" 
-        role="button" style="font-weight:300; color:white; font-size:20px">Login</a>
-        
-    {% endif %}
-    
-    
-    
-        <!--
-        <a class="btn btn-lg btn-success" href="{{url_for('showLogin')}}" role="button" style="font-weight:300; color:white; font-size:20px">Login</a>
-        -->
+        {% if logged_in %}
+        <a class="btn btn-lg btn-success" href="{{url_for('disconnect')}}" role="button" style="font-weight:300; color:white; font-size:20px">Logout</a>        
+        {% else %}
+        <a class="btn btn-lg btn-success" href="{{url_for('showLogin')}}" role="button" style="font-weight:300; color:white; font-size:20px">Login</a>        
+        {% endif %}
     </div>
+    
 </div>
 
 
-
-
 <script>
-function signInCallback(authResult) {
+    function signInCallback(authResult) {
     if (authResult['code']) {
     // Hide the sign-in button now that the user is authorized
     $('#signinButton').attr('style', 'display: none');
