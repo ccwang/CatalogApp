@@ -7,7 +7,7 @@
 </div>
 
 {% if logged_in %}
-</br>
+<br>
 <a href="{{url_for('editItem', itemname=item.name)}}">Edit</a> |
 <a href="{{url_for('deleteItem', itemname=item.name)}}">Delete</a> 
 {% endif %} 
